@@ -4,15 +4,15 @@
 <div class="container mt-5"></div>
 <h1> Products </h1>
 <div class="row">
-    {% for product in products %}
+    {% for order in orders %}
          <div class="col-md-4 mb-4">
             <div class="card">
             <img src="{{ product.image_url }}" class="g-col-6 g-col-md-4 img-fluid">
             <div class="card-body">
-                <a href = "/products/{{product.id}}">{{product.product_name}}</a> 
-               <h5 class="card-title">{{ product.product_name }}</h5>
-               <p class="card-text">{{ product.description }}</p> 
-        
+               <h5 class="card-title">{{ order.order_id }}</h5>
+               <p class="card-text">${{ order.quantity }}</p>  
+                <form action="" ><button class="btn btn-primary btn-sm">Add To Order</button>    
+            </form>
          </div>   
          </div>
          </div>
