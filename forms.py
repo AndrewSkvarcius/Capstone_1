@@ -16,7 +16,7 @@ class LoginForm(FlaskForm):
     password = PasswordField('Password', validators=[Length(min=6)])
 
 class Order_Form(FlaskForm):
-    quantity = SelectField('Quantity', choices=[(str(i), str(i)) for i in range(1, 11)],validators=[DataRequired()] )
+    quantity = SelectField('Quantity', choices=[(int(i), int(i)) for i in range(1, 11)],validators=[DataRequired()] )
     submit = SubmitField("Add To Order")
 ## Admin Forms  ##
 

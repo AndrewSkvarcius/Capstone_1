@@ -1,14 +1,16 @@
 import os
 
-from flask import Flask, render_template, request, flash, redirect, session, g, url_for
+from flask import Flask, render_template, request, flash, redirect, session, g, url_for,jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from models import db, connect_db,Products,Orders,User
+from models import db, connect_db,Products,Orders,User,Shopping_session,Cart_item
 from forms import AddUserForm, LoginForm, AdminLogin, AddAdminForm,Order_Form
 
 
 CURR_USER_KEY = "curr_user"
+CURRENT_ITEM_KEY = "curr_item"
+CURRENT_CART_KEY = "curr_cart"
 
 app = Flask(__name__)
 app.app_context().push()
@@ -22,8 +24,35 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 toolbar = DebugToolbarExtension(app)
 
+
+
 connect_db(app)
 
+def get_cart_from_session():
+    """Retrieve the cart from the session and convert it to a more usable format.
+
+    The cart in the session is a dictionary where the keys are product_ids (as strings) and the values are dictionaries with 'quantity' and 'price'.
+    This function retrieves the products from the database and returns a dictionary where the keys are product_ids (as integers) and the values are dictionaries with 'product', 'quantity', and 'price'.
+    """
+    session_cart = session.get('cart', {})
+    print("Session Cart:", session_cart)
+
+    # Create a new cart with the product objects instead of just the ids
+    cart = {}
+    for product_id_str, cart_data in session_cart.items():
+        if not product_id_str.isdigit() or not isinstance(cart_data, dict):
+            continue
+
+        product_id = int(product_id_str)
+        product = Products.query.get(product_id)
+        if product:
+            cart[product_id] = {
+                'product': product,
+                'quantity': cart_data['quantity'],
+                'price': cart_data['price']
+            }
+    print("Cart:", cart)
+    return cart
 ### Customer routes ###
 ###### Sign UP/Log in and Log out Customers #####
 
@@ -138,45 +167,36 @@ def show_product(product_id):
     return render_template("products/product_show.html", product=product, form=form)
 
 
-@app.route('/add_to_order', methods=['POST'])
-def add_to_order():
-   
-   form = Order_Form()
-   
-   if form.validate_on_submit():
+@app.route("/cart")
+def cart():
+    cart = get_cart_from_session()
+    total_price = sum(item['quantity'] * item['price'] for item in cart.values())
+    return render_template("customers/cart.html", cart=cart, total_price=total_price)
+
+
+@app.route("/products/add/<int:product_id>", methods=["GET", "POST"])
+def add_to_cart(product_id):
     
-    product_id = request.form[product_id]
+    product_id_str = str(product_id)
+    quantity= int(request.form.get('quantity'))
+
     product = Products.query.get_or_404(product_id)
-    if product:
-        quantity = form.quanity.data
-        order = Orders(product_id=product_id, quantity=quantity)
-        db.session.add(order)
-        db.session.commit()
-        return f"Added {quantity} {product.name}(s) to order successfully"
+    if not product or product.quantity < quantity:
+        return {"error": "Product not found"}, 400
+
+    cart = session.get('cart', {})
+    if product_id in cart:
+        cart[product_id_str]['quantity'] += quantity
     else:
-       
-     return url_for("add_to_order")   
+        cart[product_id_str] = {'quantity':quantity, 'price': float(product.price)}
+    session['cart'] = cart
+    print(session['cart'])
+    print(product_id)
+    flash("Items Added")
+    return redirect(url_for("store_render"))         
+   
 
-### Admin Routes ###
- 
-@app.route("/admin/login" , methods=["GET", "POST"])
-def admin_login():
-     
-    form = AdminLogin()
-
-    if form.validate_on_submit():
-        user = Admin.authenticate(form.username.data,
-                                 form.password.data)
-
-        if user:
-            do_login(user)
-            flash(f"Hello, {Admin.username}!", "success")
-            return redirect("/admin/orders")
-
-        flash("Invalid credentials.", 'danger')
-
-    return render_template('admin/admin_login.html', form=form)
-
+   
 @app.route("/admin/create" , methods=["GET", "POST"])
 def create():
     """Handle Admin signup.

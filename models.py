@@ -72,7 +72,7 @@ class Products(db.Model):
 
      image_url = db.Column(db.Text, default = "/static/images/default-product-image.png")
 
-     quanity = db.Column(db.Integer, nullable=False)
+     quantity = db.Column(db.Integer, nullable=False)
  
      price = db.Column(db.Float, nullable=False)
 
@@ -97,7 +97,7 @@ class Order_item(db.Model):
 
     product_id =  db.Column(db.Integer, db.ForeignKey('products.id', ondelete='cascade'))
     
-    quanity_sold = db.Column(db.Integer)
+    quantity_sold = db.Column(db.Integer)
 
 class Shopping_session(db.Model):
      __tablename__ = 'shopping_session'
@@ -118,6 +118,10 @@ class Cart_item(db.Model):
     product_id = db.Column(db.Integer, db.ForeignKey("products.id", ondelete='cascade'))
 
     quantity = db.Column(db.Float, nullable=False)
+
+    def __init__(self, item_id, quantity):
+        self.item_id = item_id
+        self.quantity = quantity
    
 def connect_db(app):
     """Connect this database to provided Flask app.

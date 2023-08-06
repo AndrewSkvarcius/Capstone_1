@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{g.user.username}}'s Cart</h2>
+<ul>
+    {% for item in cart.values() %}
+        <li><img src="{{ item.product.image_url }}" class="g-col-6 g-col-md-4 img-fluid"> 
+            {{ item.product.product_name }} - ${{ item.price }} x {{ item.quantity }}</li>
+    {% endfor %}
+</ul>
+<p>Total Price: ${{ total_price }}</p>
+
+
+
+
+{% endblock %}
