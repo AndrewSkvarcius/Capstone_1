@@ -12,7 +12,12 @@
                 <a href = "/products/{{product.id}}">{{product.product_name}}</a> 
                <h5 class="card-title">{{ product.product_name }}</h5>
                <p class="card-text">{{ product.description }}</p> 
-        
+        {% if g.user.is_admin %}
+        <form method="POST"
+                        action="/admin/products/{{ product.id }}/delete">
+                    <button class="btn btn-outline-danger">Delete</button>
+                  </form>
+        {% endif %}
          </div>   
          </div>
          </div>

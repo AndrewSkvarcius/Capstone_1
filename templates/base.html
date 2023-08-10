@@ -40,13 +40,22 @@
       <li><a href="/signup">Sign up</a></li>
       <li><a href="/login">Log in</a></li>
       <li><a href="/admin/login">Admin</a></li>
+      {% elif g.user.is_admin %}
+      <li>
+        <a href=>
+          <img src="{{ g.user.image_url }}" alt="{{ g.user.username }}">
+        </a>
+      </li>
+      <li><a href="/admin/add_product">Add Product</a></li>
+      <li><a href="/admin/orders">Orders</a></li>
+      <li><a href="/logout">Log out</a></li>
       {% else %}
       <li>
         <a href=>
           <img src="{{ g.user.image_url }}" alt="{{ g.user.username }}">
         </a>
       </li>
-      <li><a href="/cart">Cart</a></li>
+      <li><a href="/cart">_Cart</a></li>
       <li><a href="/logout">Log out</a></li>
       {% endif %}
     </ul>

@@ -5,7 +5,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from models import db, connect_db,Products,Orders,User,Shopping_session,Cart_item
-from forms import AddUserForm, LoginForm, AdminLogin, AddAdminForm,Order_Form
+from forms import AddUserForm, LoginForm,Add_Products,Order_Form
 
 
 CURR_USER_KEY = "curr_user"
@@ -71,6 +71,7 @@ def do_login(user):
 
     session[CURR_USER_KEY] = user.id
 
+    
 
 def do_logout():
     """Logout user."""
@@ -128,13 +129,16 @@ def login():
     if form.validate_on_submit():
         user = User.authenticate(form.username.data,
                                  form.password.data)
-
         if user:
             do_login(user)
             flash(f"Hello, {user.username}!", "success")
-            return redirect("/customers/store")
 
-        flash("Invalid credentials.", 'danger')
+            if user.is_admin:
+                return redirect('/admin/orders')
+            
+        return redirect("/customers/store")
+
+    flash("Invalid credentials.", 'danger')
 
     return render_template('customers/login.html', form=form)
 
@@ -171,6 +175,8 @@ def show_product(product_id):
 def cart():
     cart = get_cart_from_session()
     total_price = sum(item['quantity'] * item['price'] for item in cart.values())
+    
+    total_price = round(total_price, 2)
     return render_template("customers/cart.html", cart=cart, total_price=total_price)
 
 
@@ -179,7 +185,7 @@ def add_to_cart(product_id):
     
     product_id_str = str(product_id)
     quantity= int(request.form.get('quantity'))
-
+    print(product_id)
     product = Products.query.get_or_404(product_id)
     if not product or product.quantity < quantity:
         return {"error": "Product not found"}, 400
@@ -191,46 +197,58 @@ def add_to_cart(product_id):
         cart[product_id_str] = {'quantity':quantity, 'price': float(product.price)}
     session['cart'] = cart
     print(session['cart'])
-    print(product_id)
+    print("!!!!!!Updated Cart:", session['cart'])
     flash("Items Added")
-    return redirect(url_for("store_render"))         
+    return redirect(url_for("store_render"))  
+
+@app.route('/delete_from_cart/<int:product_id>', methods=["POST", "DELETE"])
+def delete_from_cart(product_id):
+ if request.method in ['POST', 'DELETE']:
+    # Remove the product from the session cart
+    if 'cart' in session and str(product_id) in session['cart']:
+        del  session['cart'][str(product_id)]
+        print("Product with ID {} deleted from cart.".format(product_id))
+        print("Updated Cart:", session['cart'])
+    
+    return redirect(url_for('cart'))
    
 
-   
-@app.route("/admin/create" , methods=["GET", "POST"])
-def create():
-    """Handle Admin signup.
+## Routes where is_admin is true
 
-    Create new user and add to DB. Redirect to home page.
-
-    If form not valid, present form.
-
-    If the there already is a user with that username: flash message
-    and re-present form.
-    """
-
-    form = AddAdminForm()
-
+@app.route('/admin/add_product' , methods=["GET", "POST"])
+def add_products():
+    form = Add_Products()
     if form.validate_on_submit():
-        try:
-            user = Admin.create(
-                username=form.username.data,
-                password=form.password.data,
-             )
+            product = Products(
+                product_name=form.product_name.data,
+                description=form.description.data,
+                image_url=form.image_url.data,
+                quantity=form.quantity.data,
+                price=form.price.data
+                )
+            db.session.add(product)    
             db.session.commit()
+    return render_template("admin/add_products.html", form=form)
 
-        except IntegrityError:
-            flash("Username already taken", 'danger')
-            return render_template('admin/admin_signup.html', form=form)
+@app.route('/admin/products/<int:product_id>/delete', methods= ["POST", "GET"])
+def delete_product(product_id):
+    
+    if not g.user or not g.user.is_admin:
+        flash("Access denied!", "danger")
+        return redirect(url_for("login"))
+    product = Products.query.get_or_404(product_id)
+    db.session.delete(product)
+    db.session.commit()
 
-        do_login(user)
 
-        return render_template("admin/admin_login.html")
+    flash(f"Product {product_id} has been deleted successfully!", "success")
 
-    else:
-        return render_template('admin/admin_signup.html', form=form)
+    return redirect(url_for("store_render")) 
+
+
 
 @app.route("/admin/orders" , methods=["GET", "POST"])
 def admin_orders():
     
     return render_template("admin/admin_orders.html")
+

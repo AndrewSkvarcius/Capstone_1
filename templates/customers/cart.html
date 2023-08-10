@@ -1,15 +1,23 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>{{g.user.username}}'s Cart</h2>
-<ul>
-    {% for item in cart.values() %}
-        <li><img src="{{ item.product.image_url }}" class="g-col-6 g-col-md-4 img-fluid"> 
-            {{ item.product.product_name }} - ${{ item.price }} x {{ item.quantity }}</li>
+{% if cart %}
+<ul class="list-group">
+    {% for product_id, item in cart.items() %}
+        <li class="list-group-item"><img src="{{ item.product.image_url }}" class="g-col-6 g-col-sm-6 img-fluid img-thumbnail"> 
+            {{ item.product.product_name }} - ${{ item.price }} x {{ item.quantity }}
+        </li>
+        <form  action="{{ url_for('delete_from_cart', product_id=product_id) }}" method="post">
+            <input type="hidden" name="_method" value="DELETE">
+            <button type="button" class="btn btn-danger" onclick="deleteFromCart({{product_id}})">Delete</button>
+        </form>
     {% endfor %}
 </ul>
 <p>Total Price: ${{ total_price }}</p>
+{% else %}
+<p>Your Cart Is Empty</p>
+{% endif %}
 
-
-
+<script src="/static/app.js"></script>
 
 {% endblock %}
