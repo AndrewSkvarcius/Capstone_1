@@ -6,7 +6,7 @@
   <ul class="list-group">
     {% for product in products %}
       <li class="list-group-item">
-        Product Name: {{ product.product_name }}<br>
+        <a href = "/products/{{product.id}}">{{product.product_name}}</a> 
         Price: ${{ product.price }}<br>
         <!-- Add more details as needed -->
       </li>
