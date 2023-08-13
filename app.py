@@ -4,7 +4,7 @@ from flask import Flask, render_template, request, flash, redirect, session, g, 
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from models import db, connect_db,Products,Orders,User,Shopping_session,Cart_item
+from models import db, connect_db,Products,Orders,User,Order_item
 from forms import AddUserForm, LoginForm,Add_Products,Order_Form
 
 
@@ -28,14 +28,14 @@ toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
 
-def get_cart_from_session():
-    """Retrieve the cart from the session and convert it to a more usable format.
+def get_cart_from_session(user_id):
+    """Retrieve the user's cart from the session and convert it to a more usable format.
 
-    The cart in the session is a dictionary where the keys are product_ids (as strings) and the values are dictionaries with 'quantity' and 'price'.
+    The cart in the session is a dictionary where the keys are user_ids (as strings) and the values are dictionaries with product_ids as keys and values containing 'quantity' and 'price'.
     This function retrieves the products from the database and returns a dictionary where the keys are product_ids (as integers) and the values are dictionaries with 'product', 'quantity', and 'price'.
     """
-    session_cart = session.get('cart', {})
-    print("Session Cart:", session_cart)
+    session_cart = session.get('cart', {}).get(str(user_id), {})
+    print("Session Cart for User {}: {}".format(user_id, session_cart))
 
     # Create a new cart with the product objects instead of just the ids
     cart = {}
@@ -51,7 +51,7 @@ def get_cart_from_session():
                 'quantity': cart_data['quantity'],
                 'price': cart_data['price']
             }
-    print("Cart:", cart)
+    print("Cart for User {}: {}".format(user_id, cart))
     return cart
 ### Customer routes ###
 ###### Sign UP/Log in and Log out Customers #####
@@ -78,6 +78,7 @@ def do_logout():
 
     if CURR_USER_KEY in session:
         del session[CURR_USER_KEY]
+  
 
 
 @app.route('/', methods=["GET", "POST"])
@@ -114,7 +115,7 @@ def signup():
 
         do_login(user)
 
-        return render_template("customers/store.html")
+        return redirect("/customers/store")
 
     else:
         return render_template('customers/signup.html', form=form)
@@ -135,10 +136,10 @@ def login():
 
             if user.is_admin:
                 return redirect('/admin/orders')
-            
+        flash("Invalid credentials.", 'danger') 
         return redirect("/customers/store")
 
-    flash("Invalid credentials.", 'danger')
+    
 
     return render_template('customers/login.html', form=form)
 
@@ -173,7 +174,7 @@ def show_product(product_id):
 
 @app.route("/cart")
 def cart():
-    cart = get_cart_from_session()
+    cart = get_cart_from_session(g.user.id)
     total_price = sum(item['quantity'] * item['price'] for item in cart.values())
     
     total_price = round(total_price, 2)
@@ -183,36 +184,50 @@ def cart():
 @app.route("/products/add/<int:product_id>", methods=["GET", "POST"])
 def add_to_cart(product_id):
     
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
     product_id_str = str(product_id)
+    
     quantity= int(request.form.get('quantity'))
     print(product_id)
+    
     product = Products.query.get_or_404(product_id)
     if not product or product.quantity < quantity:
         return {"error": "Product not found"}, 400
 
-    cart = session.get('cart', {})
-    if product_id in cart:
-        cart[product_id_str]['quantity'] += quantity
+    user_id = g.user.id
+    user_cart = session.get('cart', {}).get(str(user_id), {})
+
+    if product_id_str in user_cart:
+        user_cart[product_id_str]['quantity'] += quantity
     else:
-        cart[product_id_str] = {'quantity':quantity, 'price': float(product.price)}
-    session['cart'] = cart
+        user_cart[product_id_str] = {'quantity': quantity, 'price': float(product.price)}
+
+    cart_data = session.get('cart', {})
+    cart_data[str(user_id)] = user_cart
+    session['cart'] = cart_data
+
     print(session['cart'])
     print("!!!!!!Updated Cart:", session['cart'])
-    flash("Items Added")
+    flash( "Item Added", 'success')
     return redirect(url_for("store_render"))  
 
 @app.route('/delete_from_cart/<int:product_id>', methods=["POST", "DELETE"])
 def delete_from_cart(product_id):
- if request.method in ['POST', 'DELETE']:
-    # Remove the product from the session cart
-    if 'cart' in session and str(product_id) in session['cart']:
-        del  session['cart'][str(product_id)]
-        print("Product with ID {} deleted from cart.".format(product_id))
-        print("Updated Cart:", session['cart'])
-    
-    return redirect(url_for('cart'))
-   
+    if request.method in ['POST', 'DELETE']:
+        user_id = g.user.id
+        session_cart = session.get('cart', {}).get(str(user_id), {})
 
+        if str(product_id) in session_cart:
+            del session_cart[str(product_id)]
+            print("********Product with ID {} deleted from cart.".format(product_id))
+            print("********Updated Session Cart:", session_cart)
+            session.modified = True
+            session['cart'][str(user_id)] = session_cart
+
+    return redirect(url_for('cart'))
 ## Routes where is_admin is true
 
 @app.route('/admin/add_product' , methods=["GET", "POST"])
@@ -252,3 +267,55 @@ def admin_orders():
     
     return render_template("admin/admin_orders.html")
 
+## orders
+
+@app.route('/place_order', methods=['POST'])
+@app.route('/place_order', methods=['POST'])
+def place_order():
+    user_id = g.user.id
+    session_cart = session.get('cart', {}).get(str(user_id), {})
+    
+    total_price = 0.0
+    order_items = []
+
+    for product_id_str, cart_data in session_cart.items():
+        product_id = int(product_id_str)
+        product = Products.query.get(product_id)
+        if product:
+            price = cart_data['price']
+            quantity = cart_data['quantity']
+            total_price += price * quantity
+
+            order_item = Order_item(product_id=product_id, quantity_sold=quantity, price=price)
+            order_items.append(order_item)
+
+    if order_items:
+        order = Orders(user_id=user_id, total_price=total_price)
+        db.session.add(order)
+        db.session.commit()
+
+        for order_item in order_items:
+            order_item.order_id = order.id
+            db.session.add(order_item)
+        db.session.commit()
+
+        session.pop('cart', None)  # Clear the session cart after placing the order
+
+        # Redirect to the order details page for the newly created order
+        return redirect(url_for('show_order', order_id=order.id))
+    else:
+        return jsonify({"error": "No items in the cart to place an order."}), 400
+
+
+
+@app.route('/order/<int:order_id>')
+
+def show_order(order_id):
+  
+    order = Orders.query.filter_by(id=order_id, user_id=g.user.id).first()
+
+    if not order:
+        flash("Order not found or unauthorized.", "danger")
+        return redirect("/")
+    products = Products.query.all()
+    return render_template("customers/show_order.html", order=order, products=products)

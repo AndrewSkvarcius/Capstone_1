@@ -1,5 +1,5 @@
 from app import db
-from models import User, Products, Orders, Order_item, Cart_item, Shopping_session
+from models import User, Products, Orders, Order_item
 
 
 db.drop_all()

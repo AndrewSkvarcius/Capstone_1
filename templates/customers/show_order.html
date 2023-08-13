@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+{% macro get_product_name(product_id) %}
+  {% for product in products %}
+    {% if product.id == product_id %}
+      {{ product.product_name }}
+    {% endif %}
+  {% endfor %}
+  Product Not Found
+{% endmacro %}
+<h2>Order Details</h2>
+  <p>Order ID: {{ order.id }}</p>
+  <p>Order Date: {{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+  <p>Total Price: ${{ order.total_price }}</p>
+
+  <h3>Order Items</h3>
+  <ul>
+    {% for item in order.items %}
+      <li>
+        Product:{{ get_product_name(item.product_id) }} <br>
+        Quantity: {{ item.quantity_sold }}<br>
+        Price per Unit: ${{ item.price }}<br>
+        Total Price: ${{ item.price * item.quantity_sold }}
+      </li>
+    {% endfor %}
+  </ul>
+
+
+
+
+
+{% endblock %}

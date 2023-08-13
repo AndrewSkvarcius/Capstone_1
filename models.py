@@ -1,9 +1,8 @@
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
-
+from datetime import datetime
 bcrypt = Bcrypt()
 db = SQLAlchemy()
-
 
 
 
@@ -85,7 +84,11 @@ class Orders(db.Model):
     
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='cascade'))
     
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id', ondelete='cascade'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    total_price = db.Column(db.Float, nullable=False)
+
+    items = db.relationship('Order_item', backref='order', lazy=True)
 
 class Order_item(db.Model):
 
@@ -95,33 +98,11 @@ class Order_item(db.Model):
     
     order_id = db.Column(db.Integer, db.ForeignKey('orders.id', ondelete='cascade'))
 
-    product_id =  db.Column(db.Integer, db.ForeignKey('products.id', ondelete='cascade'))
+    product_id =  db.Column (db.Integer, nullable=False)
     
     quantity_sold = db.Column(db.Integer)
 
-class Shopping_session(db.Model):
-     __tablename__ = 'shopping_session'
-
-     id = db.Column(db.Integer, primary_key=True )
-
-     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='cascade'))
-
-     total = db.Column(db.Float, nullable=False)
-
-class Cart_item(db.Model):
-    __tablename__ = "cart_item"
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    session_id = db.Column(db.Integer, db.ForeignKey("shopping_session.id", ondelete='cascade'))
-
-    product_id = db.Column(db.Integer, db.ForeignKey("products.id", ondelete='cascade'))
-
-    quantity = db.Column(db.Float, nullable=False)
-
-    def __init__(self, item_id, quantity):
-        self.item_id = item_id
-        self.quantity = quantity
+    price = db.Column(db.Float, nullable=False)
    
 def connect_db(app):
     """Connect this database to provided Flask app.
