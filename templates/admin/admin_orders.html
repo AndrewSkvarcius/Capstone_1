@@ -1,9 +1,17 @@
 {% extends 'base.html' %}
 {% block content %}
 
-
-<h1> Orders </h1>
-
+<h2>All Orders</h2>
+  <ul class="list-group">
+    {% for order in orders %}
+      <li class="list-group-item">
+        Order ID: {{ order.id }}<br>
+        Order Date: {{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}<br>
+        Total Price: ${{ order.total_price }}<br>
+        <a href="{{ url_for('order_details', order_id=order.id) }}">View Details</a>
+      </li>
+    {% endfor %}
+  </ul>
 
 
 

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Order Details</h2>
+  
+<ul class="list-group">
+  <li class="list-group-item">
+    Order ID: {{ curr_order.id }}<br>
+    User ID: {{ curr_order.user_id }}<br>
+    Order Date: {{ curr_order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}<br>
+    Total Price: ${{ curr_order.total_price }}<br>
+  </li>
+</ul>
+
+<h3>Order Items</h3>
+<ul class="list-group">
+  {% for item in curr_order.items %}
+    <li class="list-group-item">
+      Product: {{ product_names.get(item.product_id, 'Product Not Found') }}<br>
+      Quantity: {{ item.quantity_sold }}<br>
+      Price per Unit: ${{ item.price }}<br>
+      Total Price: ${{ item.price * item.quantity_sold }}
+    </li>
+  {% endfor %}
+</ul>
+
+
+{% endblock %}

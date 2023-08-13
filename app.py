@@ -137,7 +137,7 @@ def login():
             if user.is_admin:
                 return redirect('/admin/orders')
         flash("Invalid credentials.", 'danger') 
-        return redirect("/customers/store")
+        return redirect("/login")
 
     
 
@@ -261,15 +261,23 @@ def delete_product(product_id):
     return redirect(url_for("store_render")) 
 
 
+@app.route('/admin/orders', methods=["GET", "POST"])
+def show_all_orders():
+    orders = Orders.query.order_by(Orders.created_at.desc()).all()
+    return render_template("admin/admin_orders.html", orders=orders)
 
-@app.route("/admin/orders" , methods=["GET", "POST"])
-def admin_orders():
+@app.route('/admin/order_details/<int:order_id>')
+
+def order_details(order_id):
     
-    return render_template("admin/admin_orders.html")
+    curr_order = Orders.query.filter_by(id=order_id).first()
 
+    products = Products.query.all()
+    product_names = {product.id: product.product_name for product in products}
+
+    return render_template("admin/order_details.html", curr_order=curr_order,products=products,product_names=product_names)
 ## orders
 
-@app.route('/place_order', methods=['POST'])
 @app.route('/place_order', methods=['POST'])
 def place_order():
     user_id = g.user.id
@@ -317,5 +325,8 @@ def show_order(order_id):
     if not order:
         flash("Order not found or unauthorized.", "danger")
         return redirect("/")
+    
     products = Products.query.all()
-    return render_template("customers/show_order.html", order=order, products=products)
+    product_names = {product.id: product.product_name for product in products}
+    
+    return render_template("customers/show_order.html", order=order, products=products, product_names=product_names)

@@ -1,13 +1,10 @@
 {% extends 'base.html' %}
 {% block content %}
+
 {% macro get_product_name(product_id) %}
-  {% for product in products %}
-    {% if product.id == product_id %}
-      {{ product.product_name }}
-    {% endif %}
-  {% endfor %}
-  Product Not Found
+  {{ product_names.get(product_id, 'Product Not Found') }}
 {% endmacro %}
+
 <h2>Order Details</h2>
   <p>Order ID: {{ order.id }}</p>
   <p>Order Date: {{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
