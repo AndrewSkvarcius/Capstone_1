@@ -161,6 +161,16 @@ def store_render():
    
    return render_template("customers/store.html", products=products, form=form)
 
+@app.route('/search_products', methods=['GET', 'POST'])
+def search_products():
+    if request.method == 'POST':
+        search_query = request.form.get('search_query')
+        print(search_query)
+        products = Products.query.filter(Products.product_name.ilike(f'%{search_query}%')).all()
+        return render_template("customers/search_results.html", products=products, search_query=search_query)
+    
+    return render_template("customers/search_results.html")
+
 
 ### Product Routes ###
 

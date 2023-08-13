@@ -28,8 +28,8 @@
     <ul class="nav navbar-nav navbar-right">
       {% if request.endpoint != None %}
       <li>
-        <form class="navbar-form navbar-right" action="/users">
-          <input name="q" class="form-control" placeholder="Search Product" id="search">
+        <form class="navbar-form navbar-right" action="/search_products" method="post">
+          <input tyep="text" name="search_query" class="form-control" placeholder="Search Product" id="search">
           <button class="btn btn-default">
             <span class="fa fa-search"></span>
           </button>

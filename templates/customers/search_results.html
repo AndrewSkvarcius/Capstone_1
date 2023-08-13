@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+
+  <h2>Search Results for "{{ search_query }}"</h2>
+  
+  <ul class="list-group">
+    {% for product in products %}
+      <li class="list-group-item">
+        Product Name: {{ product.product_name }}<br>
+        Price: ${{ product.price }}<br>
+        <!-- Add more details as needed -->
+      </li>
+    {% endfor %}
+  </ul>
+
+{% endblock %}
