@@ -43,18 +43,18 @@
       {% elif g.user.is_admin %}
       <li>
         <a href=>
-          <img src="{{ g.user.image_url }}" alt="{{ g.user.username }}">
+          <img class="u_image"src="{{ g.user.image_url }}" alt="{{ g.user.username }}">
         </a>
       </li>
       <li><a href="/admin/add_product">Add Product</a></li>
       <li><a href="/admin/orders">Orders</a></li>
       <li><a href="/logout">Log out</a></li>
       {% else %}
-      <li>
-        <a href=>
-          <img src="{{ g.user.image_url }}" alt="{{ g.user.username }}">
+      <li><a href=>
+          <img class="u_image"src="{{ g.user.image_url }}" alt="{{ g.user.username }}">
         </a>
       </li>
+      <li><a href="">{{g.user.username}}</a></li>
       <li><a href="/cart">Cart</a></li>
       <li><a href="/logout">Log out</a></li>
       {% endif %}

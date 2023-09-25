@@ -3,7 +3,7 @@ import os
 from flask import Flask, render_template, request, flash, redirect, session, g, url_for,jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
-
+from send_email import send_email_with_attachment
 from models import db, connect_db,Products,Orders,User,Order_item
 from forms import AddUserForm, LoginForm,Add_Products,Order_Form
 
@@ -136,8 +136,8 @@ def login():
 
             if user.is_admin:
                 return redirect('/admin/orders')
-        flash("Invalid credentials.", 'danger') 
-        return redirect("/login")
+  
+        return redirect("/customers/store")
 
     
 
@@ -286,6 +286,26 @@ def order_details(order_id):
     product_names = {product.id: product.product_name for product in products}
 
     return render_template("admin/order_details.html", curr_order=curr_order,products=products,product_names=product_names)
+
+@app.route('/admin/order/<int:order_id>/send_email', methods=['POST'])
+def send_email(order_id):
+
+        curr_order = Orders.query.filter_by(id=order_id).first()    
+
+        user = curr_order.user
+    
+        if request.method == 'POST':
+            response = send_email_with_attachment(curr_order,user)
+            print(curr_order)
+            print (user.email)
+            flash("order Submitted successfully")
+    
+            print("Email sent! Status code: " + str(response.status_code))
+
+        return redirect(url_for("show_all_orders"))
+
+
+
 ## orders
 
 @app.route('/place_order', methods=['POST'])
@@ -340,3 +360,4 @@ def show_order(order_id):
     product_names = {product.id: product.product_name for product in products}
     
     return render_template("customers/show_order.html", order=order, products=products, product_names=product_names)
+    

@@ -19,6 +19,12 @@ class User(db.Model):
     password = db.Column(db.Text,nullable=False,)
 
     is_admin = db.Column(db.Boolean, default=False)
+
+    image_url = db.Column(
+        db.Text,
+        default="/static/images/default-pic.png",
+    )
+
     
     @classmethod
     def signup(cls,email,username, password):
@@ -89,6 +95,8 @@ class Orders(db.Model):
     total_price = db.Column(db.Float, nullable=False)
 
     items = db.relationship('Order_item', backref='order', lazy=True)
+
+    user = db.relationship('User', backref='orders')
 
 class Order_item(db.Model):
 

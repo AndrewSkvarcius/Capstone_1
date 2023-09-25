@@ -7,6 +7,8 @@
   <li class="list-group-item">
     Order ID: {{ curr_order.id }}<br>
     User ID: {{ curr_order.user_id }}<br>
+    User Name: {{ curr_order.user.username }}<br>
+    User Email: {{ curr_order.user.email }}<br>
     Order Date: {{ curr_order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}<br>
     Total Price: ${{ curr_order.total_price }}<br>
   </li>
@@ -21,7 +23,11 @@
       Price per Unit: ${{ item.price }}<br>
       Total Price: ${{ item.price * item.quantity_sold }}
     </li>
+    
   {% endfor %}
+  <form method="POST" class="form-control" action="{{ url_for('send_email', order_id=curr_order.id) }}" >
+        <button type="submit" class="btn btn-success">Fulfill Order</button>
+    </form>
 </ul>
 
 
